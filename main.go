@@ -13,9 +13,9 @@ import (
 func main() {
 	fmt.Println("Hello Go Books API")
 	mysql := db.InitMySQL()
-	err := mysql.Ping()
-	if err != nil {
-		fmt.Printf("Ping didn't worked %s", err)
+	errMySQL := mysql.Ping()
+	if errMySQL != nil {
+		fmt.Printf("Ping didn't worked %s", errMySQL)
 	}
 
 	r := mux.NewRouter()
@@ -25,5 +25,8 @@ func main() {
 
 	auth.AuthRoutes(mysql, r)
 	books.BooksRoutes(mysql, r)
-	http.ListenAndServe(":80", r)
+	errServer := http.ListenAndServe(":80", r)
+	if errServer != nil {
+		log.Printf("Server Error %s", errServer)
+	}
 }

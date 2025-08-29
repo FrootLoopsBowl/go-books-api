@@ -2,6 +2,7 @@ package auth
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/gorilla/mux"
 	"go-books-api/models"
 	"log"
@@ -12,7 +13,7 @@ import (
 func AuthRoutes(db *sql.DB, r *mux.Router) {
 	aRouter := r.PathPrefix("/auth").Subrouter()
 
-	aRouter.HandleFunc("/create/{username}/{password}", func(w http.ResponseWriter, r *http.Request) {
+	aRouter.HandleFunc("/create/{username}/{password}", func(w http.ResponseWriter, r *http.Request) { //TODO: JSON SIGNUP
 		vars := mux.Vars(r)
 		password := vars["password"]
 		passwordHash := HashPassword(password)
@@ -24,16 +25,16 @@ func AuthRoutes(db *sql.DB, r *mux.Router) {
 			log.Printf("User creation failed %s", err)
 		}
 		w.WriteHeader(http.StatusCreated)
-	})
+	}).Methods("POST")
 
-	aRouter.HandleFunc("/login/{username}/{password}", func(w http.ResponseWriter, r *http.Request) {
+	aRouter.HandleFunc("/login/{username}/{password}", func(w http.ResponseWriter, r *http.Request) { //TODO: JSON LOGIN
 		vars := mux.Vars(r)
 		username := vars["username"]
 		passwordRaw := vars["password"]
 		query := "SELECT password FROM users WHERE username = ?"
 		var password string
 		err := db.QueryRow(query, username).Scan(&password)
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			log.Printf("Didn't find a user")
 			w.WriteHeader(http.StatusUnauthorized)
 		} else if err != nil {
@@ -48,5 +49,5 @@ func AuthRoutes(db *sql.DB, r *mux.Router) {
 				w.WriteHeader(http.StatusUnauthorized)
 			}
 		}
-	})
+	}).Methods("POST")
 }

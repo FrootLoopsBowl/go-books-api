@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/mux"
 	"go-books-api/db"
 	"go-books-api/routes/auth"
+	"go-books-api/routes/books"
 	"log"
 	"net/http"
 )
@@ -23,5 +24,6 @@ func main() {
 	})
 
 	auth.AuthRoutes(mysql, r)
+	books.BooksRoutes(mysql, r)
 	http.ListenAndServe(":80", r)
 }

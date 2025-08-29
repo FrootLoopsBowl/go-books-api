@@ -3,10 +3,11 @@ package models
 import "time"
 
 type Books struct {
-	name     string
-	author   string
-	image    string
-	category string
+	Id       int
+	Name     string
+	Author   string
+	Image    string
+	Category string
 }
 
 type User struct {

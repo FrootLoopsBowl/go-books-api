@@ -8,6 +8,10 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"github.com/golang-jwt/jwt/v5"
+    	"github.com/joho/godotenv"
+	"os"
+	"encoding/json"
 )
 
 func AuthRoutes(db *sql.DB, r *mux.Router) {
@@ -42,12 +46,66 @@ func AuthRoutes(db *sql.DB, r *mux.Router) {
 			w.WriteHeader(http.StatusInternalServerError)
 		} else {
 			if CheckPassword(passwordRaw, password) {
+				tokenString := CreateJWT(username)
+
+				response := map[string]string{"token": tokenString}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(response)
+
 				log.Printf("Welcome %s", username)
-				w.WriteHeader(http.StatusAccepted)
 			} else {
 				log.Printf("Login Denied")
 				w.WriteHeader(http.StatusUnauthorized)
 			}
 		}
 	}).Methods("POST")
+
+	aRouter.HandleFunc("/testtoken/{token}", func(w http.ResponseWriter, r *http.Request) { //Debug method
+		vars := mux.Vars(r)
+		token := vars["token"]
+		result := VerifyToken(token)
+		if result {
+			log.Print("Token is good!!")
+		} else {
+			log.Print("Token is no good")
+		}
+	})
+}
+
+
+
+func CreateJWT(username string) string {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	secretKey := []byte(os.Getenv("SECRET_KEY"))
+	
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
+	jwt.MapClaims{
+		"username": username,
+		"exp": time.Now().Add(time.Hour * 24).Unix(),
+	})
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		log.Printf("Error with the JWT generation %s", err)
+	}
+	return tokenString
+}
+
+func VerifyToken(tokenString string) bool {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	secretKey := []byte(os.Getenv("SECRET_KEY"))
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return secretKey, nil
+	})
+	if err != nil {
+		log.Printf("Error with JWT %s", err)
+	}
+	return token.Valid
 }
